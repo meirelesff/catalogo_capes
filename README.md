@@ -17,4 +17,4 @@ Isto feito, basta rodar o script de coleta:
 python _coleta.py
 ```
 
-Os dados coletados serão salvos em `data/teses.csv` e `data/dissertacoes.csv`.
+A coleta é feita ano a ano para não sobrecarregar o servidor da Capes (o que deve levar algumas horas). Dados parciais brutos são salvos em formato CSV na pasta `raw_data` e, a base final, em `data`.
