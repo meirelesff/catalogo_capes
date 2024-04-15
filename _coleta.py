@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from io import StringIO
 import pandas as pd
 import requests
 import os
@@ -54,37 +55,68 @@ class Coleta:
     # Método para importar dados como DataFrame
     def importa_dados(self, link):
         self.link = link
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+        }
         
         # Importa dados
-        print(f'Planilha atual: {link}')
-        df = pd.read_csv(link, sep=';', encoding='latin1', dtype=str)
-        ano_base = df['AnoBase'][0]
-        df.to_csv(f"raw_data/{ano_base}.csv", index=False)
-        
+        print(f'Planilha atual: {self.link}')
+        response = requests.get(self.link, headers=headers)
+        df = pd.read_csv(StringIO(response.text), sep=';', encoding='latin1', dtype=str)
+             
         # Seleciona apenas algumas colunas
-        colunas = ['AnoBase', 'CodigoPrograma', 'Regiao', 'Uf', 'SiglaIes', 'NomeIes',
+        if 'AnoBase' not in df.columns:
+            colunas = ['AN_BASE', 'CD_PROGRAMA', 'SG_ENTIDADE_ENSINO', 'NM_ENTIDADE_ENSINO',
+                       'NM_PROGRAMA', 'NM_GRANDE_AREA_CONHECIMENTO', 'NM_AREA_CONHECIMENTO',
+                       'NM_AREA_AVALIACAO', 'NM_DISCENTE', 'NM_PRODUCAO', 'NM_GRAU_ACADEMICO', 'DT_TITULACAO',
+                       'DS_PALAVRA_CHAVE', 'DS_RESUMO']
+        else:
+            colunas = ['AnoBase', 'CodigoPrograma',  'SiglaIes', 'NomeIes',
                    'NomePrograma', 'GrandeAreaDescricao', 'AreaConhecimento',
                    'AreaAvaliacao', 'Autor', 'TituloTese', 'Nivel', 'DataDefesa',
-                   'PalavrasChave', 'NumeroPaginas', 'ResumoTese']
+                   'PalavrasChave', 'ResumoTese']
         
         df = df[colunas]
+        
+        # Padroniza nome das colunas
+        colunas = ['ano', 'codigo_programa', 'sigla_ies', 'nome_ies', 'nome_programa',
+                   'grande_area', 'area_conhecimento', 'area_avaliacao', 'autor', 'titulo',
+                   'nivel', 'data_defesa', 'palavras_chave', 'resumo']
+        df.columns = colunas
+        
+        # Exporta uma versao raw
+        nome_arq = self.link.split('/')[-1]
+        df.to_csv(f"raw_data/{nome_arq}", index=False)
+
         return df
     
     
     # Método para importar todos os dados
     def coleta(self):
         
-        # Importa todos os dados
+        # Extrai links
         print('Extraindo dados da Capes...')
         links = self.extrai_todos_links()
+        
+        # Checa na pasta data quais arqs já foram extraídos
+        arquivos = os.listdir('raw_data')
+        
+        # Remove os links já extraídos
+        links = [link for link in links if not any(ano in link for ano in arquivos)]
+        
+        # Importa dados
         dados = [self.importa_dados(link) for link in links]
         
+        # Carrega os dados brutos
+        dados_brutos = os.listdir('raw_data')
+        dados_brutos = [pd.read_csv(f'raw_data/{arquivo}') for arquivo in dados_brutos]
+        
         # Concatena os DataFrames
-        dados = pd.concat(dados)
+        df = pd.concat(dados_brutos)
               
-        # Exporta os dados para CSV na pasta data (separado por Nivel, 'Mestrado' e 'Doutorado')
-        dados[dados['Nivel'] == 'Mestrado'].to_csv('data/mestrado.csv', index=False)
-        dados[dados['Nivel'] == 'Doutorado'].to_csv('data/doutorado.csv', index=False)
+        # Exporta os dados em CSV
+        df[df['Nivel'] == 'Mestrado'].to_csv('data/mestrado.csv', index=False)
+        df[df['Nivel'] == 'Doutorado'].to_csv('data/doutorado.csv', index=False)
         print('Extração concluída!')
         
         return dados
@@ -95,4 +127,3 @@ class Coleta:
 if __name__ == '__main__':
     capes = Coleta()
     capes.coleta()
-    
