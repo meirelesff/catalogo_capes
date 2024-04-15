@@ -57,7 +57,7 @@ class Coleta:
         
         # Importa dados
         print(f'Planilha atual: {link}')
-        df = pd.read_csv(link, sep=';', encoding='latin1', error_bad_lines=False)
+        df = pd.read_csv(link, sep=';', encoding='latin1', dtype=str)
         ano_base = df['AnoBase'][0]
         df.to_csv(f"raw_data/{ano_base}.csv", index=False)
         
