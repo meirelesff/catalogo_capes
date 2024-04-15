@@ -14,7 +14,7 @@ pip install -r requirements.txt
 Isto feito, basta rodar o script de coleta:
 
 ```bash
-python collect.py
+python _coleta.py
 ```
 
 Os dados coletados serão salvos em `data/teses.csv` e `data/dissertacoes.csv`.
