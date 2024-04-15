@@ -8,9 +8,13 @@ import os
 class Coleta:
     def __init__(self):
         
-        # Cria o diretório data se não existir
+        # Cria diretorios
         if not os.path.exists('data'):
             os.makedirs('data')
+            
+        if not os.path.exists('raw_data'):
+            os.makedirs('raw_data')
+            
             
     # Método para extrair links de download de CSV
     def extrai_links(self, site_capes):
@@ -27,6 +31,7 @@ class Coleta:
         # Seleciona apenas links de arquivos CSV
         links = [link for link in links if link.endswith('.csv')]
         return links
+    
     
     # Método para extrair todos os links de download
     def extrai_todos_links(self):
@@ -45,13 +50,16 @@ class Coleta:
             
         return links
 
+
     # Método para importar dados como DataFrame
     def importa_dados(self, link):
         self.link = link
         
         # Importa dados
         print(f'Planilha atual: {link}')
-        df = pd.read_csv(link, sep=';', encoding='latin1')
+        df = pd.read_csv(link, sep=';', encoding='latin1', error_bad_lines=False)
+        ano_base = df['AnoBase'][0]
+        df.to_csv(f"raw_data/{ano_base}.csv", index=False)
         
         # Seleciona apenas algumas colunas
         colunas = ['AnoBase', 'CodigoPrograma', 'Regiao', 'Uf', 'SiglaIes', 'NomeIes',
@@ -61,6 +69,7 @@ class Coleta:
         
         df = df[colunas]
         return df
+    
     
     # Método para importar todos os dados
     def coleta(self):
@@ -79,6 +88,7 @@ class Coleta:
         print('Extração concluída!')
         
         return dados
+    
     
     
 # Coleta os dados
